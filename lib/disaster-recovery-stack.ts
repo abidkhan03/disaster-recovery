@@ -39,6 +39,7 @@ export class DisasterRecoveryStack extends Stack {
       actions: [
         'dynamodb:PutItem',
         'dynamodb:GetItem',
+        'dynamodb:UpdateItem',
         'dynamodb:DeleteItem',
         'dynamodb:Scan'
       ],
