@@ -186,56 +186,80 @@ def delete_product(productId):
 
 def lambda_handler(event, context):
     try:
-        httpMethod = event['httpMethod']
+        http_method = event['httpMethod']
         path = event['path']
 
-        if path == "/addProduct" and httpMethod == "POST":
-            productDetails = json.loads(event['body'])
-            productId = add_product(productDetails)
+        if http_method == 'GET' and path == '/getProducts':
+            # Handle get all products
             return {
                 'statusCode': 200,
-                'body': json.dumps({"product_id": productId})
+                'body': json.dumps(get_products(), cls=DecimalEncoder),
+                'headers': {
+                    'Content-Type': 'application/json'
+                }
             }
 
-        elif path == "/getProduct" and httpMethod == "GET":
-            productId = event['queryStringParameters']['product_id']
-            product = get_product(productId)
+        elif http_method == 'GET' and path == '/getProduct':
+            # Handle get a specific product
+            product_id = event['queryStringParameters']['product_id']
             return {
                 'statusCode': 200,
-                'body': json.dumps(product, cls=DecimalEncoder)
+                'body': json.dumps(get_product(product_id), cls=DecimalEncoder),
+                'headers': {
+                    'Content-Type': 'application/json'
+                }
             }
 
-        elif path == "/getProducts" and httpMethod == "GET":
-            products = get_products()
+        elif http_method == 'POST' and path == '/addProduct':
+            # Handle add a product
+            product_detail = json.loads(event['body'])
+            product_id = add_product(product_detail)
             return {
-                'statusCode': 200,
-                'body': json.dumps(products, cls=DecimalEncoder)
+                'statusCode': 201,
+                'body': json.dumps({'product_id': product_id}),
+                'headers': {
+                    'Content-Type': 'application/json'
+                }
             }
 
-        elif path == "/updateProduct" and httpMethod == "PUT":
-            productDetails = json.loads(event['body'])
-            updatedProductId = update_product(productDetails)
+        elif http_method == 'PUT' and path == '/updateProduct':
+            # Handle update a product
+            product_detail = json.loads(event['body'])
+            update_product(product_detail)
             return {
                 'statusCode': 200,
-                'body': json.dumps({"updated_product_id": updatedProductId})
+                'body': json.dumps({'message': 'Product updated'}),
+                'headers': {
+                    'Content-Type': 'application/json'
+                }
             }
 
-        elif path == "/deleteProduct" and httpMethod == "DELETE":
-            productId = event['queryStringParameters']['product_id']
-            deletedProductId = delete_product(productId)
+        elif http_method == 'DELETE' and path == '/deleteProduct':
+            # Handle delete a product
+            product_id = event['queryStringParameters']['product_id']
+            delete_product(product_id)
             return {
                 'statusCode': 200,
-                'body': json.dumps({"deleted_product_id": deletedProductId})
+                'body': json.dumps({'message': 'Product deleted'}),
+                'headers': {
+                    'Content-Type': 'application/json'
+                }
             }
 
         else:
             return {
                 'statusCode': 400,
-                'body': 'Unsupported method or path'
+                'body': json.dumps({'message': 'Bad request'}),
+                'headers': {
+                    'Content-Type': 'application/json'
+                }
             }
 
     except Exception as e:
         return {
             'statusCode': 500,
-            'body': json.dumps({"error": str(e)})
+            'body': json.dumps({'error': str(e)}),
+            'headers': {
+                'Content-Type': 'application/json'
+            }
         }
