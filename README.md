@@ -6,7 +6,7 @@ This repository contains the AWS Cloud Development Kit (CDK) code for deploying 
 
 ### The Recovery Methods that are used in this Stack:
 
-- **Point in Time Recovery (PIRT)**
+- **Point in Time Recovery (PITR)**
 - **On Demand Recovery**
 - **Cross-regions Recovery**
 - **Scheduled Backups**
