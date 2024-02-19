@@ -7,7 +7,8 @@ import { Code, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { LambdaIntegration, RestApi } from 'aws-cdk-lib/aws-apigateway';
 import { PolicyStatement, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import { BackupPlan, BackupPlanRule, BackupResource } from 'aws-cdk-lib/aws-backup';
-import { Schedule } from 'aws-cdk-lib/aws-events';
+import { Rule, Schedule } from 'aws-cdk-lib/aws-events';
+import { LambdaFunction } from 'aws-cdk-lib/aws-events-targets';
 
 export class DisasterRecoveryStack extends Stack {
   private readonly lambdaPath: string = join(__dirname, '../lambda')
@@ -73,6 +74,13 @@ export class DisasterRecoveryStack extends Stack {
     });
 
     productLambda.addToRolePolicy(policy);
+
+    //
+    const backupSchedule = new Rule(this, 'BackupScheduleRule', {
+      schedule: Schedule.cron({ hour: '10', minute: '0' }),
+    })
+
+    backupSchedule.addTarget(new LambdaFunction(productLambda));
 
     // Create rest api
     const restApi = new RestApi(this, 'Product-Lambda-API', {

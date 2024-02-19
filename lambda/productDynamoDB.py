@@ -193,13 +193,14 @@ def create_backup():
         )
         print(
             f"Backup created successfully: {response['BackupDetails']['BackupArn']}")
-        # Convert datetime objects to string in the response (if any)
-        backup_details = response['BackupDetails']
-        if 'BackupCreationDateTime' in backup_details:
-            backup_details['BackupCreationDateTime'] = backup_details['BackupCreationDateTime'].isoformat()
-        if 'BackupExpiryDateTime' in backup_details:
-            backup_details['BackupExpiryDateTime'] = backup_details['BackupExpiryDateTime'].isoformat(
-            )
+        # Prepare the backup details for JSON serialization
+        backup_details = {
+            'BackupArn': response['BackupDetails']['BackupArn'],
+            'BackupName': response['BackupDetails']['BackupName'],
+            'BackupStatus': response['BackupDetails']['BackupStatus'],
+            'BackupType': response['BackupDetails']['BackupType'],
+            'BackupCreationDateTime': response['BackupDetails']['BackupCreationDateTime'].isoformat()
+        }
         return backup_details
     except ClientError as e:
         print(f"Error creating backup: {e}")
@@ -207,6 +208,22 @@ def create_backup():
 
 
 def lambda_handler(event, context):
+    # Check if the Lambda was triggered by an EventBridge event
+    if 'source' in event and event['source'] == 'aws.events':
+        print("Event triggered by EventBridge")
+        try:
+            backup_details = create_backup()
+            return {
+                'statusCode': 200,
+                'body': json.dumps({'message': 'Backup created', 'backup_details': backup_details}),
+                'headers': {'Content-Type': 'application/json'}
+            }
+        except Exception as e:
+            return {
+                'statusCode': 500,
+                'body': json.dumps({'error': str(e)}),
+                'headers': {'Content-Type': 'application/json'}
+            }
     try:
         http_method = event['httpMethod']
         path = event['path']
@@ -263,18 +280,6 @@ def lambda_handler(event, context):
             return {
                 'statusCode': 200,
                 'body': json.dumps({'message': 'Product deleted'}),
-                'headers': {
-                    'Content-Type': 'application/json'
-                }
-            }
-
-        elif http_method == 'POST' and path == '/createBackup':
-            # Handle backup creation
-            backup_details = create_backup()
-            return {
-                'statusCode': 200,
-                'body': json.dumps({'message': 'Backup created',
-                                    'backup_details': backup_details}, cls=DecimalEncoder),
                 'headers': {
                     'Content-Type': 'application/json'
                 }
