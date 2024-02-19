@@ -23,7 +23,7 @@ This repository contains the AWS Cloud Development Kit (CDK) code for deploying 
 
 ## Usage
 
-_ _Frist_ _: Ensure ```docker``` is running
+_First_: Ensure ```docker``` is running
 
 1. **Deployment**: Use the AWS CDK CLI to deploy this stack to your AWS account.
 ```bash
@@ -31,7 +31,7 @@ cdk deploy DisasterRecoveryStack
 ```
 2. **Interacting with the API**: Use the output API Gateway URL to interact with the product database. Supported operations include adding, getting, updating, and deleting products, as well as creating backups.
 
-    _ _Adding data_ _: Either you can use Postman or Thunder Client by posting the following URL:
+    _Adding data_: Either you can use Postman or Thunder Client by posting the following URL:
 ```
 https://2l0qferg69.execute-api.us-east-2.amazonaws.com/prod/addProduct
 ```
