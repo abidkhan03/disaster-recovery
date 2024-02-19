@@ -18,7 +18,8 @@ This repository contains the AWS Cloud Development Kit (CDK) code for deploying 
 cdk deploy
 ```
 2. **Interacting with the API**: Use the output API Gateway URL to interact with the product database. Supported operations include adding, getting, updating, and deleting products, as well as creating backups.
-    __Adding data__: EIther you can use Postman or Thunder Client by posting the following URL:
+
+    __Adding data__: Either you can use Postman or Thunder Client by posting the following URL:
 ```
 https://2l0qferg69.execute-api.us-east-2.amazonaws.com/prod/addProduct
 ```
