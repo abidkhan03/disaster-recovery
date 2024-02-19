@@ -135,9 +135,8 @@ update_product_schema = {
     "required": ["product_id", "product_category", "product_title"]
 }
 
+
 # update a product
-
-
 def update_product(productDetail):
     '''
     Template
@@ -170,9 +169,8 @@ def update_product(productDetail):
 
     return productDetail['product_id']
 
+
 # delete a product
-
-
 def delete_product(productId):
     print(f"Deleting product: {productId}")
 
@@ -182,6 +180,30 @@ def delete_product(productId):
 
     print(json.dumps(response, indent=4, cls=DecimalEncoder))
     return productId
+
+
+# Create a backup
+def create_backup():
+    client = boto3.client('dynamodb')
+    backup_name = f"product_backup_{datetime.utcnow().strftime('%Y%m%d%H%M')}"
+    try:
+        response = client.create_backup(
+            TableName=table,
+            BackupName=backup_name
+        )
+        print(
+            f"Backup created successfully: {response['BackupDetails']['BackupArn']}")
+        # Convert datetime objects to string in the response (if any)
+        backup_details = response['BackupDetails']
+        if 'BackupCreationDateTime' in backup_details:
+            backup_details['BackupCreationDateTime'] = backup_details['BackupCreationDateTime'].isoformat()
+        if 'BackupExpiryDateTime' in backup_details:
+            backup_details['BackupExpiryDateTime'] = backup_details['BackupExpiryDateTime'].isoformat(
+            )
+        return backup_details
+    except ClientError as e:
+        print(f"Error creating backup: {e}")
+        raise e
 
 
 def lambda_handler(event, context):
@@ -241,6 +263,18 @@ def lambda_handler(event, context):
             return {
                 'statusCode': 200,
                 'body': json.dumps({'message': 'Product deleted'}),
+                'headers': {
+                    'Content-Type': 'application/json'
+                }
+            }
+
+        elif http_method == 'POST' and path == '/createBackup':
+            # Handle backup creation
+            backup_details = create_backup()
+            return {
+                'statusCode': 200,
+                'body': json.dumps({'message': 'Backup created',
+                                    'backup_details': backup_details}, cls=DecimalEncoder),
                 'headers': {
                     'Content-Type': 'application/json'
                 }

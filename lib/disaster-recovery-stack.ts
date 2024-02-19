@@ -6,6 +6,8 @@ import { DockerImageCode, DockerImageFunction, Function } from 'aws-cdk-lib/aws-
 import { Code, Runtime } from 'aws-cdk-lib/aws-lambda';
 import { LambdaIntegration, RestApi } from 'aws-cdk-lib/aws-apigateway';
 import { PolicyStatement, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
+import { BackupPlan, BackupPlanRule, BackupResource } from 'aws-cdk-lib/aws-backup';
+import { Schedule } from 'aws-cdk-lib/aws-events';
 
 export class DisasterRecoveryStack extends Stack {
   private readonly lambdaPath: string = join(__dirname, '../lambda')
@@ -13,7 +15,7 @@ export class DisasterRecoveryStack extends Stack {
     super(scope, id, props);
 
     // Create the DynamoDB table
-    const table = new Table(this, 'Product', {
+    const productTable = new Table(this, 'Product', {
       tableName: 'Product',
       partitionKey: {
         name: 'product_id',
@@ -25,13 +27,36 @@ export class DisasterRecoveryStack extends Stack {
 
     });
 
+    // Define a backup rule
+    const dailyBackupRule = new BackupPlanRule({
+      ruleName: 'ProductDailyBackup',
+      scheduleExpression: Schedule.cron({
+        minute: '10',
+        hour: '9',
+      }),
+      deleteAfter: Duration.days(30),
+    });
+
+    const backupPlan = new BackupPlan(this, 'BackupPlan', {
+      backupPlanName: 'DynamoDB-Backup-Plan',
+      backupPlanRules: [dailyBackupRule],
+    });
+
+    backupPlan.addRule(dailyBackupRule);
+
+    backupPlan.addSelection('BackupSelection', {
+      resources: [
+        BackupResource.fromDynamoDbTable(productTable),
+      ]
+    })
+
     // Create lambda Python Function
     const productLambda = new DockerImageFunction(this, 'ProductLambda', {
       functionName: 'Product-Lambda',
       code: DockerImageCode.fromImageAsset(this.lambdaPath),
       timeout: Duration.seconds(60),
       environment: {
-        TABLE_NAME: table.tableName,
+        TABLE_NAME: productTable.tableName,
       },
     });
 
@@ -41,9 +66,10 @@ export class DisasterRecoveryStack extends Stack {
         'dynamodb:GetItem',
         'dynamodb:UpdateItem',
         'dynamodb:DeleteItem',
-        'dynamodb:Scan'
+        'dynamodb:Scan',
+        'dynamodb:CreateBackup'
       ],
-      resources: [table.tableArn],
+      resources: [productTable.tableArn],
     });
 
     productLambda.addToRolePolicy(policy);
@@ -101,6 +127,10 @@ export class DisasterRecoveryStack extends Stack {
         'method.request.querystring.product_id': false,
       }
     });
+
+    // Create backup resource
+    const createBackup = restApi.root.addResource('createBackup');
+    createBackup.addMethod('POST', getIntegration, {});
 
     // Grant invoke permission
     productLambda.grantInvoke(
